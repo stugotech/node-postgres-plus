@@ -1,0 +1,23 @@
+{
+  "name": "node-postgres-plus",
+  "version": "0.1.0",
+  "repository": "https://github.com/stugotech/node-postgres-plus.git",
+  "description": "Provides a MongoDB-like API on top of node-postgres",
+  "scripts": {
+    "prepublish": "gobble build -f ./dist",
+    "test": "mocha --harmony"
+  },
+  "main": "./dist/PostgresPlus.js",
+  "devDependencies": {
+    "babel": "^4.7.7",
+    "chai": "^2.1.1",
+    "gobble": "^0.7.6",
+    "gobble-babel": "^4.0.1"
+  },
+  "dependencies": {
+    "babel-runtime": "^4.7.8",
+    "bluebird": "^2.9.13",
+    "mongo-sql": "^2.6.1",
+    "pg": "^4.3.0"
+  }
+}
