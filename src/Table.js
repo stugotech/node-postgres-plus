@@ -11,9 +11,26 @@ export default class Table {
   }
   
   
+  query(query, values) {
+    let sql;
+    
+    if (typeof query === 'object' && !(query instanceof String)) {
+      let q = builder.sql(query);
+      sql = q.toString();
+      values = q.values;
+    } else {
+      sql = query;
+    }
+    
+    return Promise.using(this.connect(), function (client) {
+      return client.queryAsync(sql, values);
+    });
+  }
+  
+  
   find(query) {
     return this
-      ._find({
+      .query({
         type: 'select',
         table: this.name,
         where: query
@@ -24,21 +41,13 @@ export default class Table {
   
   findOne(query) {
     return this
-      ._find({
+      .query({
         type: 'select',
         table: this.name,
         where: this.queryOrId(query),
         limit: 1
       })
       .then((x) => x.rows[0] || null);
-  }
-  
-  
-  _find(query) {
-    return Promise.using(this.connect(), function (client) {
-        let sql = builder.sql(query);
-        return client.queryAsync(sql.toString(), sql.values);
-      });
   }
   
   
@@ -95,17 +104,12 @@ export default class Table {
   
   
   remove(query) {
-    let sql = builder.sql({
-      type: 'delete',
-      table: this.name,
-      where: this.queryOrId(query)
-    });
-    
-    return Promise.using(this.connect(), function (client) {
-      return client
-        .queryAsync(sql.toString(), sql.values)
-        .then((x) => ({count: x.rowCount}));
-    });
+    return this.query({
+        type: 'delete',
+        table: this.name,
+        where: this.queryOrId(query)
+      })
+      .then((x) => ({count: x.rowCount}));
   }
   
   

@@ -18,6 +18,7 @@ describe('PostgresPlus', function () {
     let [client, done] = await pg.connectAsync(cs);
     client = Promise.promisifyAll(client);
     
+    await client.queryAsync("DROP TABLE IF EXISTS test");
     await client.queryAsync("CREATE TABLE test (id SERIAL, a varchar, b varchar)");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('1', '2')");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('2', '4')");
