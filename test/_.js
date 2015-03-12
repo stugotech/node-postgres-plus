@@ -1,1 +1,0 @@
-require('babel/register')({blacklist: ['regenerator'], optional: ['asyncToGenerator']});

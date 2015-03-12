@@ -1,5 +1,5 @@
 
-import pg from 'pg';
+import pg, {types} from 'pg';
 import Promise from 'bluebird';
 
 import Table from './Table';
@@ -28,3 +28,5 @@ export default class PostgresPlus {
       });
   }
 }
+
+export {types};

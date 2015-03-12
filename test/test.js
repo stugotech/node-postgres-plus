@@ -3,11 +3,11 @@ import {expect} from 'chai';
 import pg from 'pg';
 import Promise from 'bluebird';
 
-import PostgresPlus from '../src/PostgresPlus';
+import PostgresPlus, {types} from '../src/PostgresPlus';
 
 Promise.longStackTraces();
 Promise.promisifyAll(pg);
-var cs = 'postgres://postgres:postgres@172.17.0.2/postgres';
+var cs = 'postgres://postgres:postgres@localhost/postgres';
 
 
 describe('PostgresPlus', function () {
@@ -37,6 +37,11 @@ describe('PostgresPlus', function () {
     
     await client.queryAsync('DROP TABLE test');
     done(client);
+  });
+  
+  it('should export pg-types', function () {
+    expect(types).to.exist;
+    expect(types.setTypeParser).to.exist;
   });
   
   describe('Table', function () {
