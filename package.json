@@ -5,7 +5,7 @@
   "description": "Provides a MongoDB-like API on top of node-postgres",
   "scripts": {
     "prepublish": "gobble build -f ./dist",
-    "test": "mocha --harmony"
+    "test": "mocha --harmony --compilers js:babel/register"
   },
   "main": "./dist/PostgresPlus.js",
   "devDependencies": {
