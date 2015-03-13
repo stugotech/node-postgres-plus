@@ -1,13 +1,29 @@
 
 import builder from 'mongo-sql';
 import Promise from 'bluebird';
+import changeCase from 'change-case';
 
+const acceptableCases = ['camel', 'pascal', 'snake', 'param', 'dot', 'constant', 'title'];
 
 export default class Table {
-  constructor(connect, name, idField) {
+  constructor(connect, name, options) {
     this.connect = connect;
     this.name = name;
-    this.idField = idField;
+    
+    if (typeof options === 'object') {
+      this.idField = options.id || 'id';
+      
+      if (options.case) {
+        if (acceptableCases.indexOf(options.case) === -1)
+          throw new Error('options.case must be one of ' + acceptableCases);
+        
+        this.changeCase = changeCase[options.case + 'Case'];
+      }
+    } else if (typeof options === 'undefined') {
+      this.idField = 'id';
+    } else {
+      this.idField = options;
+    }
   }
   
   
@@ -29,25 +45,29 @@ export default class Table {
   
   
   find(query) {
+    let camelCase = this.camelCase.bind(this);
+    
     return this
       .query({
         type: 'select',
         table: this.name,
-        where: query
+        where: this.convertCase(query)
       })
-      .then((x) => x.rows);
+      .then((x) => x.rows.map(camelCase));
   }
   
   
   findOne(query) {
+    let camelCase = this.camelCase.bind(this);
+    
     return this
       .query({
         type: 'select',
         table: this.name,
-        where: this.queryOrId(query),
+        where: this.convertCase(this.queryOrId(query)),
         limit: 1
       })
-      .then((x) => x.rows[0] || null);
+      .then((x) => camelCase(x.rows[0] || null));
   }
   
   
@@ -55,13 +75,15 @@ export default class Table {
     let sql = builder.sql({
       type: 'insert',
       table: this.name,
-      values: doc
+      values: this.convertCase(doc)
     });
+    
+    let camelCase = this.camelCase.bind(this);
     
     return Promise.using(this.connect(), function (client) {
       return client
         .queryAsync(sql.toString() + ' RETURNING *', sql.values)
-        .then((x) => x.rows[0] || null);
+        .then((x) => camelCase(x.rows[0] || null));
     });
   }
   
@@ -77,14 +99,16 @@ export default class Table {
     let sql = builder.sql({
       type: 'update',
       table: this.name,
-      where: q,
-      updates: doc
+      where: this.convertCase(q),
+      updates: this.convertCase(doc)
     });
+    
+    let camelCase = this.camelCase.bind(this);
     
     return Promise.using(this.connect(), function (client) {
       return client
         .queryAsync(sql.toString() + ' RETURNING *', sql.values)
-        .then((x) => x.rows[0] || null);
+        .then((x) => camelCase(x.rows[0] || null));
     });
   }
   
@@ -93,12 +117,15 @@ export default class Table {
     let sql = builder.sql({
       type: 'update',
       table: this.name,
-      where: this.queryOrId(query),
-      updates: doc
+      where: this.convertCase(this.queryOrId(query)),
+      updates: this.convertCase(doc)
     });
     
+    let camelCase = this.camelCase.bind(this);
+    
     return Promise.using(this.connect(), function (client) {
-      return client.queryAsync(sql.toString() + ' RETURNING *', sql.values);
+      return client.queryAsync(sql.toString() + ' RETURNING *', sql.values)
+        .then((x) => x.rows.map(camelCase));
     });
   }
   
@@ -107,7 +134,7 @@ export default class Table {
     return this.query({
         type: 'delete',
         table: this.name,
-        where: this.queryOrId(query)
+        where: this.convertCase(this.queryOrId(query))
       })
       .then((x) => ({count: x.rowCount}));
   }
@@ -121,5 +148,33 @@ export default class Table {
     } else {
       return query;
     }
+  }
+  
+  convertCase(obj) {
+    if (this.changeCase && obj !== null && typeof obj !== 'undefined') {
+      for (let k in obj) {
+        if (obj.hasOwnProperty(k) && k[0] !== '$') {
+          let val = obj[k];
+          delete obj[k];
+          obj[this.changeCase(k)] = val;
+        }
+      }
+    }
+    
+    return obj;
+  }
+  
+  camelCase(obj) {
+    if (this.changeCase && obj !== null && typeof obj !== 'undefined') {
+      for (let k in obj) {
+        if (obj.hasOwnProperty(k) && k[0] !== '$') {
+          let val = obj[k];
+          delete obj[k];
+          obj[changeCase.camelCase(k)] = val;
+        }
+      }
+    }
+    
+    return obj;
   }
 }

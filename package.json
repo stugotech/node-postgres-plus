@@ -17,6 +17,7 @@
   "dependencies": {
     "babel-runtime": "^4.7.8",
     "bluebird": "^2.9.13",
+    "change-case": "^2.2.0",
     "mongo-sql": "^2.6.1",
     "pg": "^4.3.0"
   }

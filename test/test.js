@@ -13,6 +13,7 @@ var cs = 'postgres://postgres:postgres@localhost/postgres';
 describe('PostgresPlus', function () {
   var pgp;
   var test;
+  var test2;
   
   beforeEach(async function () {
     let [client, done] = await pg.connectAsync(cs);
@@ -25,10 +26,16 @@ describe('PostgresPlus', function () {
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('3', '6')");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('4', '8')");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('5', '10')");
+    
+    await client.queryAsync("DROP TABLE IF EXISTS test2");
+    await client.queryAsync("CREATE TABLE test2 (id SERIAL, field_a varchar, field_b varchar)");
+    await client.queryAsync("INSERT INTO test2 (field_a, field_b) VALUES ('1', '2')");
+    
     done(client);
     
     pgp = new PostgresPlus(cs);
     test = pgp.table('test');
+    test2 = pgp.table('test2', {case: 'snake'});
   });
   
   afterEach(async function () {
@@ -49,6 +56,15 @@ describe('PostgresPlus', function () {
       it('should return all with no arguments', async function () {
         let rows = await test.find();
         expect(rows).to.have.length(5);
+      });
+      
+      it('should convert case of query and results if necessary', async function () {
+        let rows = await test2.find({fieldA: '1'});
+        expect(rows).to.have.length(1);
+        expect(rows[0].fieldA).to.equal('1');
+        expect(rows[0].field_a).to.not.exist;
+        expect(rows[0].fieldB).to.equal('2');
+        expect(rows[0].field_b).to.not.exist;
       });
     });
 
@@ -87,6 +103,15 @@ describe('PostgresPlus', function () {
         expect(result.a).to.equal('3');
         expect(result.b).to.equal('6');
       });
+      
+      it('should convert case of query and result if necessary', async function () {
+        let result = await test2.findOne({fieldA: '1'});
+        expect(result).to.exist;
+        expect(result.fieldA).to.equal('1');
+        expect(result.field_a).to.not.exist;
+        expect(result.fieldB).to.equal('2');
+        expect(result.field_b).to.not.exist;
+      });
     });
     
     
@@ -107,6 +132,11 @@ describe('PostgresPlus', function () {
         expect(result.a).to.equal('6');
         expect(result.b).to.equal('12');
       });
+      
+      it('should convert the case if necessary', async function () {
+        // i.e. this shouldn't fall over
+        await test2.insert({fieldA: '6', fieldB: '12'});
+      });
     });
     
     
@@ -126,6 +156,14 @@ describe('PostgresPlus', function () {
         expect(result.id).to.equal(1);
         expect(result.a).to.equal('6');
         expect(result.b).to.equal('2');
+      });
+      
+      it('should convert the case if necessary', async function () {
+        let result = await test2.save({id: 1, fieldA: '6'});
+        expect(result).to.exist;
+        expect(result.id).to.equal(1);
+        expect(result.fieldA).to.equal('6');
+        expect(result.fieldB).to.equal('2');
       });
     });
     
@@ -148,6 +186,15 @@ describe('PostgresPlus', function () {
         expect(result.a).to.equal('6');
         expect(result.b).to.equal('12');
       });
+      
+      it('should convert the case if necessary', async function () {
+        await test2.update({id: 1}, {fieldA: '6', fieldB: '12'});
+        
+        let result = await test2.findOne(1);
+        expect(result).to.exist;
+        expect(result.fieldA).to.equal('6');
+        expect(result.fieldB).to.equal('12');
+      });
     });
     
     
@@ -163,6 +210,12 @@ describe('PostgresPlus', function () {
         
         let result = await test.findOne(1);
         expect(result).to.not.exist;
+      });
+      
+      it('should convert the case if necessary', async function () {
+        let result = await test2.remove({fieldA: '1'});
+        expect(result.count).to.equal(1);
+        expect(await test2.findOne(1)).to.not.exist;
       });
     });
   });

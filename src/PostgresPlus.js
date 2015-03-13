@@ -10,8 +10,8 @@ export default class PostgresPlus {
     this.connectionString = connectionString;
   }
   
-  table(name, idField='id') {
-    return new Table(this.connect.bind(this), name, idField);
+  table(name, options) {
+    return new Table(this.connect.bind(this), name, options);
   }
   
   connect() {
