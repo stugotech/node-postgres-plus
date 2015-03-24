@@ -14,13 +14,14 @@ describe('PostgresPlus', function () {
   var pgp;
   var test;
   var test2;
+  var test3;
   
   beforeEach(async function () {
     let [client, done] = await pg.connectAsync(cs);
     client = Promise.promisifyAll(client);
     
     await client.queryAsync("DROP TABLE IF EXISTS test");
-    await client.queryAsync("CREATE TABLE test (id SERIAL, a varchar, b varchar)");
+    await client.queryAsync("CREATE TABLE test (id SERIAL PRIMARY KEY, a varchar, b varchar)");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('1', '2')");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('2', '4')");
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('3', '6')");
@@ -28,14 +29,20 @@ describe('PostgresPlus', function () {
     await client.queryAsync("INSERT INTO test (a, b) VALUES ('5', '10')");
     
     await client.queryAsync("DROP TABLE IF EXISTS test2");
-    await client.queryAsync("CREATE TABLE test2 (id SERIAL, field_a varchar, field_b varchar)");
+    await client.queryAsync("CREATE TABLE test2 (id SERIAL PRIMARY KEY, field_a varchar, field_b varchar)");
     await client.queryAsync("INSERT INTO test2 (field_a, field_b) VALUES ('1', '2')");
+    
+    await client.queryAsync("DROP TABLE IF EXISTS test3");
+    await client.queryAsync("CREATE TABLE test3 (id SERIAL PRIMARY KEY, test varchar)");
+    await client.queryAsync("INSERT INTO test3 (test) VALUES ('1')");
+    await client.queryAsync("INSERT INTO test3 (test) VALUES ('6')");
     
     done(client);
     
     pgp = new PostgresPlus(cs);
     test = pgp.table('test');
     test2 = pgp.table('test2', {case: 'snake'});
+    test3 = pgp.table('test3');
   });
   
   afterEach(async function () {
@@ -56,6 +63,46 @@ describe('PostgresPlus', function () {
       it('should return all with no arguments', async function () {
         let rows = await test.find();
         expect(rows).to.have.length(5);
+      });
+      
+      it('should return a cursor with a skip method', async function () {
+        let rows = await test.find().skip(2);
+        expect(rows).to.have.length(3);
+      });
+      
+      it('should return a cursor with a limit method', async function () {
+        let rows = await test.find().limit(2);
+        expect(rows).to.have.length(2);
+      });
+      
+      it('should return a cursor with a take method', async function () {
+        let rows = await test.find().take(2);
+        expect(rows).to.have.length(2);
+      });
+      
+      it('should return a cursor with a sort method', async function () {
+        let rows = await test.find().sort({a: -1}).limit(2);
+        expect(rows).to.have.length(2);
+        expect(rows[0].a).to.equal('5');
+        expect(rows[1].a).to.equal('4');
+      });
+      
+      it('should return a cursor with a join method', async function () {
+        let rows = await test3.find().join('test', {a: '$test3.test$'});
+        expect(rows).to.have.length(1);
+        expect(rows[0].id).to.equal(1);
+        expect(rows[0].test).to.equal('1');
+        expect(rows[0].a).to.equal('1');
+        expect(rows[0].b).to.equal('2');
+      });
+      
+      
+      it('should return a cursor with a project method', async function () {
+        let rows = await test3.find().join('test', {a: '$test3.test$'}).project({id: true, testA: 'test.a', testB: {table: 'test', name: 'b'}});
+        expect(rows).to.have.length(1);
+        expect(rows[0].id).to.equal(1);
+        expect(rows[0].testA).to.equal('1');
+        expect(rows[0].testB).to.equal('2');
       });
       
       it('should convert case of query and results if necessary', async function () {

@@ -3,6 +3,8 @@ import builder from 'mongo-sql';
 import Promise from 'bluebird';
 import changeCase from 'change-case';
 
+import Cursor from './Cursor';
+
 const acceptableCases = ['camel', 'pascal', 'snake', 'param', 'dot', 'constant', 'title'];
 
 export default class Table {
@@ -45,29 +47,19 @@ export default class Table {
   
   
   find(query) {
-    let camelCase = this.camelCase.bind(this);
-    
-    return this
-      .query({
-        type: 'select',
-        table: this.name,
-        where: this.convertCase(query)
-      })
-      .then((x) => x.rows.map(camelCase));
+    return new Cursor(this, {
+      type: 'select',
+      table: this.name,
+      where: this.convertCase(this.queryOrId(query))
+    });
   }
   
   
   findOne(query) {
-    let camelCase = this.camelCase.bind(this);
-    
     return this
-      .query({
-        type: 'select',
-        table: this.name,
-        where: this.convertCase(this.queryOrId(query)),
-        limit: 1
-      })
-      .then((x) => camelCase(x.rows[0] || null));
+      .find(query)
+      .limit(1)
+      .then((x) => x[0] || null);
   }
   
   
