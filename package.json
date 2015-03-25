@@ -1,6 +1,6 @@
 {
   "name": "pg-plus",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "repository": "https://github.com/stugotech/node-postgres-plus.git",
   "description": "Provides a MongoDB-like API on top of node-postgres",
   "scripts": {
