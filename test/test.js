@@ -45,14 +45,6 @@ describe('PostgresPlus', function () {
     test3 = pgp.table('test3');
   });
   
-  afterEach(async function () {
-    let [client, done] = await pg.connectAsync(cs);
-    client = Promise.promisifyAll(client);
-    
-    await client.queryAsync('DROP TABLE test');
-    done(client);
-  });
-  
   it('should export pg-types', function () {
     expect(types).to.exist;
     expect(types.setTypeParser).to.exist;
@@ -263,6 +255,19 @@ describe('PostgresPlus', function () {
         let result = await test2.remove({fieldA: '1'});
         expect(result.count).to.equal(1);
         expect(await test2.findOne(1)).to.not.exist;
+      });
+    });
+    
+    
+    describe('drop', function () {
+      it('should drop the table', async function () {
+        await test.drop();
+        let result = await pgp.table('information_schema.tables').findOne({table_schema: 'public', table_name: 'test'});
+        expect(result).to.be.null;
+      });
+      
+      it('should not complain if the table doesn\'t exist', async function () {
+        await pgp.table('nonexistent').drop();
       });
     });
   });

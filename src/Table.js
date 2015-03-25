@@ -132,6 +132,16 @@ export default class Table {
   }
   
   
+  drop(cascade = false) {
+    return this.query({
+      type: 'drop-table',
+      table: this.name,
+      ifExists: true,
+      cascade
+    });
+  }
+  
+  
   queryOrId(query) {
     if (typeof query !== 'object' && typeof query !== 'undefined') {
       let q = {};
