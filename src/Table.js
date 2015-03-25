@@ -8,8 +8,8 @@ import Cursor from './Cursor';
 const acceptableCases = ['camel', 'pascal', 'snake', 'param', 'dot', 'constant', 'title'];
 
 export default class Table {
-  constructor(connect, name, options) {
-    this.connect = connect;
+  constructor(pg, name, options) {
+    this.pg = pg;
     this.name = name;
     
     if (typeof options === 'object') {
@@ -26,23 +26,6 @@ export default class Table {
     } else {
       this.idField = options;
     }
-  }
-  
-  
-  query(query, values) {
-    let sql;
-    
-    if (typeof query === 'object' && !(query instanceof String)) {
-      let q = builder.sql(query);
-      sql = q.toString();
-      values = q.values;
-    } else {
-      sql = query;
-    }
-    
-    return Promise.using(this.connect(), function (client) {
-      return client.queryAsync(sql, values);
-    });
   }
   
   
@@ -72,11 +55,9 @@ export default class Table {
     
     let camelCase = this.camelCase.bind(this);
     
-    return Promise.using(this.connect(), function (client) {
-      return client
-        .queryAsync(sql.toString() + ' RETURNING *', sql.values)
-        .then((x) => camelCase(x.rows[0] || null));
-    });
+    return this.pg
+      .query(sql.toString() + ' RETURNING *', sql.values)
+      .then((x) => camelCase(x.rows[0] || null));
   }
   
   
@@ -97,11 +78,9 @@ export default class Table {
     
     let camelCase = this.camelCase.bind(this);
     
-    return Promise.using(this.connect(), function (client) {
-      return client
-        .queryAsync(sql.toString() + ' RETURNING *', sql.values)
-        .then((x) => camelCase(x.rows[0] || null));
-    });
+    return this.pg
+      .query(sql.toString() + ' RETURNING *', sql.values)
+      .then((x) => camelCase(x.rows[0] || null));
   }
   
   
@@ -115,15 +94,14 @@ export default class Table {
     
     let camelCase = this.camelCase.bind(this);
     
-    return Promise.using(this.connect(), function (client) {
-      return client.queryAsync(sql.toString() + ' RETURNING *', sql.values)
-        .then((x) => x.rows.map(camelCase));
-    });
+    return this.pg
+      .query(sql.toString() + ' RETURNING *', sql.values)
+      .then((x) => x.rows.map(camelCase));
   }
   
   
   remove(query) {
-    return this.query({
+    return this.pg.query({
         type: 'delete',
         table: this.name,
         where: this.convertCase(this.queryOrId(query))
@@ -133,7 +111,7 @@ export default class Table {
   
   
   drop(cascade = false) {
-    return this.query({
+    return this.pg.query({
       type: 'drop-table',
       table: this.name,
       ifExists: true,

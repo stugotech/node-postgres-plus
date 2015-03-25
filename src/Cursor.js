@@ -17,7 +17,7 @@ export default class Cursor {
   toArray() {
     let camelCase = this.table.camelCase.bind(this.table);
     
-    return this.table
+    return this.table.pg
       .query(this.query)
       .then((x) => x.rows.map(camelCase));
   }
