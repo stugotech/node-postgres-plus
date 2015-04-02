@@ -120,6 +120,17 @@ export default class Table {
   }
   
   
+  count(query) {
+    return this.pg.query({
+        type: 'select',
+        table: this.name,
+        where: this.convertCase(this.queryOrId(query)),
+        columns: [{type: 'count', expression: '*'}]
+      })
+      .then((x) => parseInt(x.rows[0].count));
+  }
+  
+  
   queryOrId(query) {
     if (typeof query !== 'object' && typeof query !== 'undefined') {
       let q = {};

@@ -251,6 +251,11 @@ describe('PostgresPlus', function () {
         expect(result).to.not.exist;
       });
       
+      it('should delete all with no arguments', async function () {
+        await test.remove();
+        expect(await test.find()).to.have.length(0);
+      });
+      
       it('should convert the case if necessary', async function () {
         let result = await test2.remove({fieldA: '1'});
         expect(result.count).to.equal(1);
@@ -268,6 +273,19 @@ describe('PostgresPlus', function () {
       
       it('should not complain if the table doesn\'t exist', async function () {
         await pgp.table('nonexistent').drop();
+      });
+    });
+    
+    
+    describe('count', function () {
+      it('should return the count', async function () {
+        let count = await test.count();
+        expect(count).to.equal(5);
+      });
+      
+      it('should return the count of matching rows', async function () {
+        let count = await test.count({$or: [{a: '2'}, {b: '2'}]});
+        expect(count).to.equal(2);
       });
     });
   });
